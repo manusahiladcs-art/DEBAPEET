@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TBWES — Real-Time Production Tracking (MES) | Coil Line BAY 1</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  /* Thermax-style industrial palette: dark charcoal shell + Thermax red accents */
+  --sidebar:#15181d; --sb-border:rgba(255,255,255,0.06); --sh-hover:rgba(255,255,255,0.04); --sh-active:rgba(225,29,52,0.16);
+  --bg:#eef1f5; --surface:#ffffff; --surface2:#f6f8fb; --border:#e3e8ef; --border2:#ced6e0;
+  --text:#10141a; --text-mid:#4a586b; --text-light:#8a99ab;
+  --tx-red:#c0142c; --tx-red2:#e11d34; --tx-red-light:#fdecee;
+  --blue:#1a6fc4; --blue2:#2d8fe8; --blue-light:#e8f4fd;
+  --green:#0d9660; --green-light:#e6f7f1;
+  --amber:#d97706; --amber-light:#fef3c7;
+  --red:#dc2626; --red-light:#fee2e2;
+  --purple:#7c3aed; --purple-light:#ede9fe;
+  --teal:#0891b2; --teal-light:#cffafe;
+  --sh:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+  --sh-md:0 4px 16px rgba(0,0,0,0.10); --sh-lg:0 8px 32px rgba(0,0,0,0.13);
+  --r:12px; --r-sm:8px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:13px;}
+
+/* ─── SIDEBAR ─── */
+.sidebar{width:236px;background:var(--sidebar);display:flex;flex-direction:column;height:100vh;flex-shrink:0;overflow-y:auto;border-right:1px solid rgba(255,255,255,0.04);}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-brand{padding:18px 18px 14px;border-bottom:1px solid var(--sb-border);}
+.sb-logo-wrap{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.sb-logo-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--tx-red2),var(--tx-red));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 2px 10px rgba(225,29,52,0.4);}
+.sb-logo-text{font-size:13px;font-weight:800;color:#fff;letter-spacing:-0.2px;line-height:1.15;}
+.sb-logo-sub{font-size:8.5px;color:rgba(255,255,255,0.4);font-weight:500;letter-spacing:0.3px;text-transform:uppercase;margin-top:1px;}
+.sb-plant{display:flex;flex-direction:column;gap:3px;}
+.sb-plant-row{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:#f8b4bd;background:rgba(225,29,52,0.12);padding:4px 9px;border-radius:6px;width:fit-content;}
+.sb-group{font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,0.2);padding:16px 18px 6px;}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 18px;color:rgba(255,255,255,0.46);cursor:pointer;font-size:12.5px;font-weight:500;border-left:2px solid transparent;transition:all .15s;}
+.sb-item:hover{background:var(--sh-hover);color:rgba(255,255,255,0.78);}
+.sb-item.active{background:var(--sh-active);border-left-color:var(--tx-red2);color:#fff;}
+.sb-item .ico{font-size:13px;width:18px;flex-shrink:0;text-align:center;}
+.sb-item .tagn{margin-left:auto;font-size:9px;font-weight:800;background:var(--tx-red2);color:#fff;border-radius:20px;padding:1px 7px;}
+.sb-footer{margin-top:auto;padding:13px 18px;border-top:1px solid var(--sb-border);}
+.sb-user{display:flex;align-items:center;gap:10px;}
+.sb-avatar{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#3a4150,#22262e);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;border:1px solid rgba(255,255,255,0.08);}
+.sb-uname{font-size:12px;font-weight:600;color:rgba(255,255,255,0.78);}
+.sb-urole{font-size:9.5px;color:rgba(255,255,255,0.32);}
+
+/* ─── MAIN ─── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:58px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 26px;flex-shrink:0;z-index:200;position:relative;}
+.topbar-left{display:flex;align-items:center;gap:14px;}
+.tb-context{display:flex;flex-direction:column;}
+.tb-crumb{font-size:10.5px;color:var(--text-light);font-weight:600;letter-spacing:0.2px;}
+.tb-title{font-size:15.5px;font-weight:800;color:var(--text);letter-spacing:-0.3px;}
+.tb-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);}
+.tb-pill .lv{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(13,150,96,0.5);animation:pulseG 1.6s infinite;}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(13,150,96,0.5)}70%{box-shadow:0 0 0 6px rgba(13,150,96,0)}100%{box-shadow:0 0 0 0 rgba(13,150,96,0)}}
+.tb-clock{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--text);}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.tb-btn{height:36px;padding:0 13px;border-radius:var(--r-sm);background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:600;color:var(--text-mid);transition:all .14s;font-family:'DM Sans',sans-serif;}
+.tb-btn:hover{background:var(--tx-red-light);border-color:var(--tx-red2);color:var(--tx-red);}
+.tb-select{height:36px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);padding:0 10px;font-size:12px;font-weight:600;color:var(--text-mid);font-family:'DM Sans',sans-serif;cursor:pointer;outline:none;}
+
+/* BELL */
+.bell-wrap{position:relative;}
+.bell-btn{width:36px;height:36px;border-radius:var(--r-sm);background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;position:relative;transition:all .14s;}
+.bell-btn:hover{background:var(--tx-red-light);border-color:var(--tx-red2);}
+.bell-badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;background:var(--tx-red2);color:#fff;font-size:9px;font-weight:700;border-radius:20px;display:flex;align-items:center;justify-content:center;border:2px solid var(--surface);padding:0 3px;}
+.notif-panel{display:none;position:absolute;top:48px;right:0;width:370px;background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-lg);z-index:999;overflow:hidden;}
+.notif-panel.open{display:block;animation:dropIn .18s ease;}
+@keyframes dropIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.np-head{padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.np-head h4{font-size:13.5px;font-weight:700;}
+.np-clear{font-size:11px;color:var(--tx-red2);cursor:pointer;font-weight:700;}
+.np-list{max-height:380px;overflow-y:auto;}
+.np-item{display:flex;gap:11px;padding:12px 18px;border-bottom:1px solid #f4f7fb;cursor:pointer;transition:background .12s;}
+.np-item:hover{background:#f8faff;}
+.np-item.unread{background:#fff6f7;}
+.np-ico{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.ni-r{background:#fee2e2;} .ni-a{background:#fef3c7;} .ni-b{background:#dbeafe;} .ni-g{background:#dcfce7;}
+.np-title{font-size:12px;font-weight:700;color:var(--text);line-height:1.3;}
+.np-desc{font-size:11px;color:var(--text-mid);margin-top:2px;line-height:1.4;}
+.np-time{font-size:10px;color:var(--text-light);margin-top:3px;}
+
+/* ─── CONTENT ─── */
+.content{flex:1;overflow-y:auto;padding:22px 26px;}
+.content::-webkit-scrollbar{width:6px;}
+.content::-webkit-scrollbar-thumb{background:#c8d5e3;border-radius:3px;}
+.panel{display:none;animation:fadeUp .22s ease;}
+.panel.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* PAGE HEADER */
+.page-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;}
+.page-hdr h1{font-size:21px;font-weight:800;letter-spacing:-0.5px;color:var(--text);}
+.page-hdr p{font-size:12px;color:var(--text-mid);margin-top:3px;}
+.page-tag{display:inline-flex;align-items:center;gap:6px;font-size:9.5px;font-weight:800;letter-spacing:0.6px;text-transform:uppercase;background:var(--tx-red-light);color:var(--tx-red);padding:3px 10px;border-radius:20px;margin-bottom:6px;}
+
+/* KPI STRIP */
+.mes-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px;}
+.kc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);position:relative;overflow:hidden;}
+.kc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.kc.green::before{background:var(--green);} .kc.amber::before{background:var(--amber);} .kc.red::before{background:var(--red);} .kc.blue::before{background:var(--blue2);} .kc.teal::before{background:var(--teal);}
+.kc-val{font-size:27px;font-weight:800;line-height:1;letter-spacing:-1.2px;}
+.kc.green .kc-val{color:var(--green);} .kc.amber .kc-val{color:var(--amber);} .kc.red .kc-val{color:var(--red);} .kc.blue .kc-val{color:var(--blue2);} .kc.teal .kc-val{color:var(--teal);}
+.kc-lbl{font-size:11px;color:var(--text-mid);font-weight:600;margin-top:6px;}
+.kc-sub{font-size:10px;color:var(--text-light);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+
+/* ─── PRODUCTION LINE / PIPELINE ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden;}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.card-head h3{font-size:14px;font-weight:700;color:var(--text);}
+.card-head .sub{font-size:11.5px;color:var(--text-mid);margin-top:2px;font-weight:400;}
+.card-body{padding:18px;}
+.card-body.np{padding:0;}
+.rbtns{display:flex;gap:8px;align-items:center;}
+
+.pipeline{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:6px 4px 12px;}
+.pipeline::-webkit-scrollbar{height:6px;}
+.st-tile{flex:0 0 152px;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;padding:11px 12px;position:relative;transition:all .18s;cursor:pointer;}
+.st-tile:hover{box-shadow:var(--sh-md);transform:translateY(-2px);}
+.st-tile.st-run{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf6,#ffffff);}
+.st-tile.st-idle{border-color:#fde68a;background:linear-gradient(180deg,#fffbeb,#ffffff);}
+.st-tile.st-breakdown{border-color:#fecaca;background:linear-gradient(180deg,#fef2f2,#ffffff);}
+.st-arrow{flex:0 0 26px;display:flex;align-items:center;justify-content:center;color:var(--text-light);font-size:16px;}
+.st-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.st-no{font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--text-light);background:#fff;border:1px solid var(--border);border-radius:5px;padding:1px 6px;}
+.st-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.dot-run{background:var(--green);box-shadow:0 0 0 0 rgba(13,150,96,0.5);animation:pulseG 1.6s infinite;}
+.dot-idle{background:var(--amber);}
+.dot-breakdown{background:var(--red);box-shadow:0 0 0 0 rgba(220,38,38,0.6);animation:pulseR 1s infinite;}
+@keyframes pulseR{0%{box-shadow:0 0 0 0 rgba(220,38,38,0.5)}70%{box-shadow:0 0 0 7px rgba(220,38,38,0)}100%{box-shadow:0 0 0 0 rgba(220,38,38,0)}}
+.st-name{font-size:12.5px;font-weight:800;letter-spacing:-0.2px;line-height:1.1;}
+.st-flow{font-size:9.5px;color:var(--text-light);margin-top:3px;line-height:1.3;min-height:24px;}
+.st-counts{font-size:11px;color:var(--text-mid);margin-top:6px;font-family:'JetBrains Mono',monospace;}
+.st-counts b{font-size:15px;color:var(--text);font-weight:800;}
+.st-oee{margin-top:7px;font-size:11px;font-weight:800;padding:3px 0;border-radius:6px;text-align:center;letter-spacing:0.3px;}
+.oee-good{background:#dcfce7;color:#15803d;} .oee-mid{background:#fef3c7;color:#92400e;} .oee-bad{background:#fee2e2;color:#b91c1c;}
+.st-status-lbl{font-size:8.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;margin-top:5px;}
+.sl-run{color:var(--green);} .sl-idle{color:var(--amber);} .sl-breakdown{color:var(--red);}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:var(--surface2);}
+th{padding:10px 13px;text-align:left;font-size:9.5px;font-weight:800;color:var(--text-light);text-transform:uppercase;letter-spacing:0.7px;border-bottom:1.5px solid var(--border);white-space:nowrap;}
+td{padding:11px 13px;border-bottom:1px solid #f0f4fb;color:var(--text);font-size:12px;vertical-align:middle;white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:#fafcff;}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:600;}
+.cell-oee{font-weight:800;font-family:'JetBrains Mono',monospace;}
+.tnum{font-family:'JetBrains Mono',monospace;font-weight:600;}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;letter-spacing:0.2px;}
+.b-green{background:#dcfce7;color:#15803d;} .b-red{background:#fee2e2;color:#dc2626;} .b-amber{background:#fef3c7;color:#92400e;}
+.b-blue{background:#dbeafe;color:#1d4ed8;} .b-gray{background:#f1f5f9;color:#475569;} .b-teal{background:#cffafe;color:#0e7490;}
+
+/* MINI OEE BAR (analytics) */
+.oee-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f0f4fb;}
+.oee-row:last-child{border-bottom:none;}
+.oee-st{width:160px;font-size:12px;font-weight:700;flex-shrink:0;}
+.oee-track{flex:1;height:22px;background:#eef2f7;border-radius:6px;overflow:hidden;position:relative;}
+.oee-bar{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-size:10px;font-weight:800;font-family:'JetBrains Mono',monospace;transition:width .5s;}
+.apq{display:flex;gap:4px;width:210px;flex-shrink:0;}
+.apq-chip{flex:1;text-align:center;font-size:9.5px;font-weight:700;padding:3px 0;border-radius:5px;background:var(--surface2);border:1px solid var(--border);}
+.apq-chip b{display:block;font-size:11px;font-family:'JetBrains Mono',monospace;}
+
+/* NOTICE */
+.notice{border-radius:var(--r-sm);padding:11px 15px;font-size:12px;font-weight:500;display:flex;align-items:flex-start;gap:10px;margin-bottom:14px;line-height:1.5;}
+.n-info{background:var(--blue-light);border:1px solid #bfdbfe;color:#1e40af;}
+.n-warn{background:var(--amber-light);border:1px solid #fde68a;color:#92400e;}
+.n-err{background:var(--red-light);border:1px solid #fecaca;color:#991b1b;}
+.n-gray{background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);}
+
+/* FORM */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;} .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;} .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.field{display:flex;flex-direction:column;gap:5px;}
+label{font-size:10px;font-weight:800;color:var(--text-mid);letter-spacing:0.4px;text-transform:uppercase;}
+input,select,textarea{border:1.5px solid var(--border2);border-radius:var(--r-sm);padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:#fff;outline:none;transition:all .15s;width:100%;}
+input:focus,select:focus{border-color:var(--tx-red2);box-shadow:0 0 0 3px rgba(225,29,52,0.1);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 17px;border-radius:var(--r-sm);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:700;transition:all .15s;}
+.btn-primary{background:var(--tx-red2);color:#fff;box-shadow:0 2px 8px rgba(225,29,52,0.3);}
+.btn-primary:hover{background:var(--tx-red);}
+.btn-ghost{background:transparent;color:var(--text-mid);border:1.5px solid var(--border2);}
+.btn-ghost:hover{background:var(--surface2);}
+.btn-sm{padding:6.5px 13px;font-size:12px;}
+
+/* TRACE TIMELINE */
+.trace-line{position:relative;padding-left:30px;}
+.trace-step{position:relative;padding:0 0 18px 0;}
+.trace-step::before{content:'';position:absolute;left:-22px;top:4px;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--green);z-index:1;}
+.trace-step.fail::before{border-color:var(--red);} .trace-step.wait::before{border-color:var(--amber);background:#fff;}
+.trace-step::after{content:'';position:absolute;left:-16px;top:14px;width:2px;height:100%;background:var(--border);}
+.trace-step:last-child::after{display:none;}
+.trace-t{font-size:12.5px;font-weight:700;}
+.trace-meta{font-size:11px;color:var(--text-mid);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+
+/* PARETO */
+.pareto-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;}
+.pareto-lbl{width:165px;font-size:11.5px;font-weight:600;flex-shrink:0;}
+.pareto-track{flex:1;height:18px;background:#eef2f7;border-radius:5px;overflow:hidden;}
+.pareto-fill{height:100%;background:linear-gradient(90deg,var(--tx-red),var(--tx-red2));border-radius:5px;}
+.pareto-val{width:64px;text-align:right;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:700;flex-shrink:0;}
+
+/* DEVICE GRID */
+.dev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.dev-card{border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface2);}
+.dev-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.dev-name{font-size:12.5px;font-weight:700;}
+.dev-meta{font-size:10.5px;color:var(--text-mid);font-family:'JetBrains Mono',monospace;line-height:1.7;}
+
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.helper-txt{font-size:11.5px;color:var(--text-light);}
+.section-stub{padding:34px;text-align:center;color:var(--text-light);}
+.section-stub .ic{font-size:34px;margin-bottom:8px;}
+
+/* STATUS BANNER */
+.statusbar{display:flex;align-items:center;gap:14px;padding:13px 18px;border-radius:var(--r);margin-bottom:16px;border:1px solid;}
+.statusbar.bad{background:linear-gradient(90deg,#fff1f2,#fff 60%);border-color:#fecaca;}
+.sb-ic{font-size:22px;flex-shrink:0;}
+.sb-main{font-size:14px;font-weight:800;color:var(--text);}
+.sb-meta{font-size:12px;color:var(--text-mid);margin-top:2px;}
+.sb-spacer{flex:1;}
+.sb-chip{text-align:center;padding:6px 14px;border-radius:9px;background:#fff;border:1px solid var(--border);min-width:64px;}
+.sb-chip b{display:block;font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1.1;}
+.sb-chip span{font-size:9px;color:var(--text-light);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;}
+
+/* LIVE FEED */
+.feed{max-height:296px;overflow-y:auto;}
+.feed-item{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #f2f5f9;animation:feedIn .4s ease;}
+.feed-item:last-child{border-bottom:none;}
+@keyframes feedIn{from{opacity:0;transform:translateX(-10px);background:#fffbe6}to{opacity:1;transform:translateX(0)}}
+.feed-time{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--text-light);width:52px;flex-shrink:0;}
+.feed-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.feed-txt{font-size:11.5px;color:var(--text);flex:1;line-height:1.4;}
+
+/* SCORECARD */
+.score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.score-cell{padding:11px 13px;border:1px solid var(--border);border-radius:9px;background:var(--surface2);}
+.score-val{font-size:21px;font-weight:800;letter-spacing:-0.5px;font-family:'JetBrains Mono',monospace;line-height:1;}
+.score-lbl{font-size:10px;color:var(--text-mid);font-weight:700;text-transform:uppercase;letter-spacing:0.3px;margin-top:4px;}
+.spark{display:flex;align-items:flex-end;gap:4px;height:46px;}
+.spark-bar{flex:1;border-radius:3px 3px 0 0;min-height:3px;transition:height .4s;}
+
+/* TILE FLASH on live update */
+.st-tile.flash{animation:flashTile .7s ease;}
+@keyframes flashTile{0%{box-shadow:0 0 0 3px rgba(13,150,96,0.45)}100%{box-shadow:0 0 0 0 rgba(13,150,96,0)}}
+
+/* TOAST */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#10141a;color:#fff;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--sh-lg);opacity:0;pointer-events:none;transition:all .3s;z-index:3000;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* SIDEBAR SYSTEM STATUS */
+.sb-sys{display:flex;align-items:center;gap:7px;font-size:10px;color:rgba(255,255,255,0.42);font-weight:600;margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--sb-border);}
+.sb-sys .d{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(13,150,96,0.5);animation:pulseG 1.8s infinite;}
+.sb-ver{font-size:9px;color:rgba(255,255,255,0.26);margin-top:10px;font-family:'JetBrains Mono',monospace;letter-spacing:0.2px;}
+
+::-webkit-scrollbar{width:6px;height:6px;} ::-webkit-scrollbar-thumb{background:#c8d5e3;border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-logo-wrap">
+      <div class="sb-logo-icon">🔥</div>
+      <div>
+        <div class="sb-logo-text">Thermax · TBWES</div>
+        <div class="sb-logo-sub">Babcock &amp; Wilcox Energy</div>
+      </div>
+    </div>
+    <div class="sb-plant">
+      <span class="sb-plant-row">🏭 Shirwal Plant · BAY 1</span>
+      <span class="sb-plant-row" style="color:#9fd5b4;background:rgba(13,150,96,0.14)">● Coil Manufacturing Line</span>
+    </div>
+  </div>
+
+  <div class="sb-group">Live Operations</div>
+  <div class="sb-item active" id="nav-dashboard" onclick="go('dashboard')"><span class="ico">📊</span>Live Line Dashboard<span class="tagn">LIVE</span></div>
+  <div class="sb-item" id="nav-stations" onclick="go('stations')"><span class="ico">🏭</span>Station Monitor</div>
+  <div class="sb-item" id="nav-terminal" onclick="go('terminal')"><span class="ico">📱</span>Operator Terminal</div>
+  <div class="sb-item" id="nav-shift" onclick="go('shift')"><span class="ico">👷</span>Shift Performance</div>
+
+  <div class="sb-group">Analytics</div>
+  <div class="sb-item" id="nav-oee" onclick="go('oee')"><span class="ico">📈</span>OEE Analytics</div>
+  <div class="sb-item" id="nav-downtime" onclick="go('downtime')"><span class="ico">⚠️</span>Downtime &amp; Breakdown</div>
+
+  <div class="sb-group">Traceability &amp; Quality</div>
+  <div class="sb-item" id="nav-trace" onclick="go('trace')"><span class="ico">🔍</span>Coil Traceability</div>
+  <div class="sb-item" id="nav-quality" onclick="go('quality')"><span class="ico">🔬</span>RT / Inspection</div>
+
+  <div class="sb-group">System</div>
+  <div class="sb-item" id="nav-devices" onclick="go('devices')"><span class="ico">📡</span>Data Sources &amp; Devices</div>
+  <div class="sb-item" id="nav-erp" onclick="go('erp')"><span class="ico">🔗</span>ERP Integration</div>
+  <div class="sb-item" id="nav-admin" onclick="go('admin')"><span class="ico">🔐</span>Users &amp; Audit</div>
+
+  <div class="sb-footer">
+    <div class="sb-sys"><span class="d"></span> All systems operational · LAN</div>
+    <div class="sb-user">
+      <div class="sb-avatar">RS</div>
+      <div>
+        <div class="sb-uname">R. Sutar</div>
+        <div class="sb-urole">Production Supervisor</div>
+      </div>
+    </div>
+    <div class="sb-ver">ProTrack MES · v3.4.2 · on-prem</div>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="tb-context">
+        <span class="tb-crumb">BAY 1 · Coil Line</span>
+        <span class="tb-title" id="topbar-title">Live Line Dashboard</span>
+      </div>
+      <span class="tb-pill"><span class="lv"></span> Shift A · 07:00–15:30</span>
+    </div>
+    <div class="topbar-right">
+      <span class="tb-clock" id="clock">--:--:--</span>
+      <select class="tb-select" id="shift-sel"><option>Shift A (07:00–15:30)</option><option>Shift B (15:30–24:00)</option><option>Shift C (00:00–07:00)</option></select>
+      <button class="tb-btn" onclick="toggleLED()">🖥️ LED Display</button>
+      <div class="bell-wrap">
+        <div class="bell-btn" onclick="toggleBell()">🔔<div class="bell-badge" id="bell-count">4</div></div>
+        <div class="notif-panel" id="notif-panel">
+          <div class="np-head"><h4>Line Alerts</h4><span class="np-clear" onclick="clearNotifs()">Mark all read</span></div>
+          <div class="np-list">
+            <div class="np-item unread"><div class="np-ico ni-r">🛑</div><div><div class="np-title">Breakdown — Butt Joint Setup (St-05)</div><div class="np-desc">Down 240 min this shift · OEE dropped to 13%</div><div class="np-time">2 min ago</div></div></div>
+            <div class="np-item unread"><div class="np-ico ni-a">⏱️</div><div><div class="np-title">Bottleneck detected — Welding/RT cluster</div><div class="np-desc">Stations 06–07 starving downstream WIP</div><div class="np-time">14 min ago</div></div></div>
+            <div class="np-item unread"><div class="np-ico ni-b">📡</div><div><div class="np-title">PLC reconnected — System Bender</div><div class="np-desc">OPC-UA link restored after 3 min outage</div><div class="np-time">38 min ago</div></div></div>
+            <div class="np-item unread"><div class="np-ico ni-r">❌</div><div><div class="np-title">RT reject — Coil C-2241</div><div class="np-desc">Online RT flagged joint porosity · tagged for rework</div><div class="np-time">1 hr ago</div></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════ LIVE LINE DASHBOARD ══════ -->
+    <div id="panel-dashboard" class="panel active">
+      <div class="page-hdr">
+        <div>
+          <span class="page-tag">● Live · auto-refresh</span>
+          <h1>BAY 1 — Coil Line Control Tower</h1>
+          <p>Real-time OEE, station status, WIP &amp; production feed across all 11 stations</p>
+        </div>
+        <div class="rbtns">
+          <button class="btn btn-ghost btn-sm" onclick="go('stations')">📋 Station Sheet</button>
+          <button class="btn btn-primary btn-sm" onclick="go('oee')">📈 OEE Analytics</button>
+        </div>
+      </div>
+
+      <div class="statusbar bad" id="statusbar"></div>
+
+      <div class="mes-kpis" id="kpi-strip"></div>
+
+      <div class="card">
+        <div class="card-head">
+          <div><h3>Production Line Flow — Real-Time Station Status</h3><div class="sub">Tubes → ATCEP → STBW → RT → Bending → Welding → RT → Attachment → Hydro → Painting → WIP</div></div>
+          <div class="rbtns">
+            <span class="badge b-green">● Running</span><span class="badge b-amber">● Idle</span><span class="badge b-red">● Breakdown</span>
+          </div>
+        </div>
+        <div class="card-body np"><div class="pipeline" id="pipeline"></div></div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="card-head"><div><h3>📡 Live Production Feed</h3><div class="sub">Every station action, captured as it happens</div></div><span class="badge b-green">● Streaming</span></div>
+          <div class="card-body np" style="padding:6px 16px"><div class="feed" id="feed"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>⚠️ Bottleneck &amp; Loss</h3><div class="sub">Where the line is losing time right now</div></div></div>
+          <div class="card-body" id="bottleneck-box"></div>
+        </div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="card-head"><div><h3>📦 WIP Between Stations</h3><div class="sub">Queue depth between processes</div></div></div>
+          <div class="card-body" id="wip-box"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>📋 Shift Scorecard</h3><div class="sub">Shift A · management view</div></div></div>
+          <div class="card-body" id="scorecard-box"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ STATION MONITOR (their Excel sheet, live) ══════ -->
+    <div id="panel-stations" class="panel">
+      <div class="page-hdr">
+        <div>
+          <span class="page-tag">Hourly Online Monitoring · Local LAN</span>
+          <h1>Station Monitor — BAY 1</h1>
+          <p>Digital twin of your shift tracking sheet · Target vs Actual · Loss · Reject · Availability / Performance / Quality / OEE</p>
+        </div>
+        <div class="rbtns">
+          <button class="btn btn-ghost btn-sm" onclick="toast('📤 Shift OEE sheet exported — Excel/CSV')">⬇ Export Excel/CSV</button>
+        </div>
+      </div>
+      <div class="notice n-gray">📡 <b>Live</b> — auto-captured from 11 station tablets + PLC taps · recalculated continuously · <span id="mon-sync">last sync 2s ago</span> · mirrored to LAN &amp; LED board</div>
+      <div class="card">
+        <div class="card-head"><div><h3>Shift A · 07:00–15:30 · Target window 480 min</h3><div class="sub">11 stations · 3-shift working</div></div></div>
+        <div class="card-body np"><div class="tbl-wrap"><table id="mon-table">
+          <thead><tr>
+            <th>#</th><th>Equipment / Process</th><th>Input</th><th>Output</th><th>Target</th><th>Actual</th><th>Loss (min)</th><th>Reject</th><th>Run (min)</th><th>Down (min)</th><th>% Avail</th><th>Quality</th><th>Perf</th><th>OEE</th><th>Status</th>
+          </tr></thead>
+          <tbody id="mon-body"></tbody>
+        </table></div></div>
+      </div>
+    </div>
+
+    <!-- ══════ OPERATOR TERMINAL (tablet) ══════ -->
+    <div id="panel-terminal" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">Station Tablet · 11 Devices</span><h1>Operator Terminal</h1><p>Live count entry, breakdown &amp; reject logging — one tablet per station</p></div></div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-head"><div><h3>📱 Station Entry — STBW (St-03)</h3><div class="sub">Operator: A. Pawar · Shift A</div></div><span class="badge b-green">● Logged in</span></div>
+          <div class="card-body">
+            <div class="g2">
+              <div class="field"><label>Coil / Batch ID (scan RFID)</label><input type="text" value="C-2248" readonly></div>
+              <div class="field"><label>Process</label><input type="text" value="Short Tube Butt Welding" readonly></div>
+              <div class="field"><label>Input — Chamfered Tubes</label><input type="number" value="80"></div>
+              <div class="field"><label>Output — Joints Completed</label><input type="number" value="70"></div>
+              <div class="field"><label>Reject Qty</label><input type="number" value="5"></div>
+              <div class="field"><label>Downtime Reason</label><select><option>— None —</option><option>Electrode change</option><option>Material wait</option><option>Power trip</option><option>Maintenance</option></select></div>
+            </div>
+            <div style="display:flex;gap:9px;margin-top:16px;"><button class="btn btn-primary" onclick="toast('✓ Count submitted — dashboard, ERP &amp; reports updated')">✓ Submit Hourly Count</button><button class="btn btn-ghost" onclick="toast('🛑 Breakdown logged — supervisor notified')">🛑 Log Breakdown</button></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h3>Live Calc (auto)</h3><div class="sub">Computed the instant the operator submits</div></div></div>
+          <div class="card-body">
+            <div class="notice n-gray" style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2;">
+              Availability = Run / 480 = <b>88%</b><br>
+              Performance = Actual / Target = <b>93%</b><br>
+              Quality = Good / Total = <b>93%</b><br>
+              <span style="color:var(--tx-red);font-weight:800">OEE = A × P × Q = 75%</span>
+            </div>
+            <p class="helper-txt">Operators enter counts only — every metric is derived automatically and pushed to the dashboard, ERP &amp; reports in real time.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ SHIFT PERFORMANCE ══════ -->
+    <div id="panel-shift" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">Operator &amp; Shift-wise</span><h1>Shift Performance</h1><p>Actual vs Standard by operator and shift · login-based accountability</p></div></div>
+      <div class="card"><div class="card-head"><div><h3>Shift A — Operator Output</h3></div></div>
+        <div class="card-body np"><div class="tbl-wrap"><table>
+          <thead><tr><th>Operator</th><th>Station</th><th>Logged In</th><th>Target</th><th>Actual</th><th>Reject</th><th>Efficiency</th></tr></thead>
+          <tbody>
+            <tr><td class="fw6">A. Pawar</td><td>STBW</td><td class="mono">07:02</td><td class="tnum">80</td><td class="tnum">70</td><td class="tnum">5</td><td><span class="badge b-green">88%</span></td></tr>
+            <tr><td class="fw6">S. Kale</td><td>System Bender</td><td class="mono">07:00</td><td class="tnum">280</td><td class="tnum">220</td><td class="tnum">5</td><td><span class="badge b-amber">79%</span></td></tr>
+            <tr><td class="fw6">M. Jadhav</td><td>Butt Joint Setup</td><td class="mono">07:15</td><td class="tnum">20</td><td class="tnum">10</td><td class="tnum">5</td><td><span class="badge b-red">50%</span></td></tr>
+            <tr><td class="fw6">D. Shinde</td><td>Hydro</td><td class="mono">07:05</td><td class="tnum">8</td><td class="tnum">6</td><td class="tnum">5</td><td><span class="badge b-amber">75%</span></td></tr>
+          </tbody>
+        </table></div></div>
+      </div>
+    </div>
+
+    <!-- ══════ OEE ANALYTICS ══════ -->
+    <div id="panel-oee" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">OEE · A × P × Q</span><h1>OEE Analytics — BAY 1</h1><p>Station-wise OEE with Availability / Performance / Quality breakdown</p></div></div>
+      <div class="notice n-gray">OEE = <b>Availability × Performance × Quality</b> &nbsp;·&nbsp; world-class ≥ 85% &nbsp;·&nbsp; <span style="color:var(--green);font-weight:800">● ≥65</span> &nbsp; <span style="color:var(--amber);font-weight:800">● 35–64</span> &nbsp; <span style="color:var(--red);font-weight:800">● &lt;35</span></div>
+      <div class="card"><div class="card-head"><div><h3>Station OEE Ranking</h3><div class="sub">Sorted worst-first to surface bottlenecks instantly</div></div></div>
+        <div class="card-body" id="oee-list"></div>
+      </div>
+    </div>
+
+    <!-- ══════ DOWNTIME ══════ -->
+    <div id="panel-downtime" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">Six Big Losses</span><h1>Downtime &amp; Breakdown</h1><p>Loss-time classification across the shift · Pareto of root causes</p></div></div>
+      <div class="g2">
+        <div class="card"><div class="card-head"><div><h3>Downtime Pareto — by Reason</h3></div></div>
+          <div class="card-body">
+            <div class="pareto-row"><div class="pareto-lbl">Manual Butt-Joint setup wait</div><div class="pareto-track"><div class="pareto-fill" style="width:100%"></div></div><div class="pareto-val">240 min</div></div>
+            <div class="pareto-row"><div class="pareto-lbl">Full-weld / RT cluster stall</div><div class="pareto-track"><div class="pareto-fill" style="width:80%"></div></div><div class="pareto-val">192 min</div></div>
+            <div class="pareto-row"><div class="pareto-lbl">Attachment welding wait</div><div class="pareto-track"><div class="pareto-fill" style="width:67%"></div></div><div class="pareto-val">160 min</div></div>
+            <div class="pareto-row"><div class="pareto-lbl">Hydro changeover</div><div class="pareto-track"><div class="pareto-fill" style="width:50%"></div></div><div class="pareto-val">120 min</div></div>
+            <div class="pareto-row"><div class="pareto-lbl">Bender PLC / tooling</div><div class="pareto-track"><div class="pareto-fill" style="width:43%"></div></div><div class="pareto-val">103 min</div></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-head"><div><h3>Breakdown Classification</h3></div></div>
+          <div class="card-body">
+            <div class="notice n-err">🛑 <b>2 active breakdowns</b> · total loss this shift <b>1,479 min</b> across line</div>
+            <table><thead><tr><th>Category</th><th>Events</th><th>Minutes</th></tr></thead><tbody>
+              <tr><td>Process wait / starvation</td><td class="tnum">6</td><td class="tnum">784</td></tr>
+              <tr><td>Mechanical / tooling</td><td class="tnum">3</td><td class="tnum">295</td></tr>
+              <tr><td>Setup &amp; changeover</td><td class="tnum">4</td><td class="tnum">280</td></tr>
+              <tr><td>Utilities / power</td><td class="tnum">2</td><td class="tnum">120</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ COIL TRACEABILITY ══════ -->
+    <div id="panel-trace" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">Unique Coil ID · Genealogy</span><h1>Coil Traceability</h1><p>Full process history for any coil — every station, timestamp, RT result &amp; rework tag</p></div></div>
+      <div class="card"><div class="card-head"><div><h3>🔍 Trace Coil</h3></div><div class="rbtns"><input type="text" value="C-2241" style="width:160px"><button class="btn btn-primary btn-sm">Trace</button></div></div>
+        <div class="card-body">
+          <div class="notice n-warn">⚠️ Coil <b>C-2241</b> · SA210 Gr.A1 · <b>tagged for rework</b> at Online RT (joint porosity)</div>
+          <div class="trace-line">
+            <div class="trace-step"><div class="trace-t">ATCEP — Tube cut &amp; end prep ✓</div><div class="trace-meta">07:18 · Op A.Pawar · 4 tubes chamfered</div></div>
+            <div class="trace-step"><div class="trace-t">STBW — Short tube butt weld ✓</div><div class="trace-meta">08:04 · joints welded · within param</div></div>
+            <div class="trace-step fail"><div class="trace-t">Online RT — Radiography ✗ REJECT</div><div class="trace-meta">08:41 · porosity at joint 3 · → rework queue</div></div>
+            <div class="trace-step wait"><div class="trace-t">Rework — Re-weld &amp; re-RT (pending)</div><div class="trace-meta">awaiting welder · WIP held</div></div>
+            <div class="trace-step wait" style="opacity:.55"><div class="trace-t">System Bender — Bending (not started)</div><div class="trace-meta">downstream · blocked by rework</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ RT / QUALITY ══════ -->
+    <div id="panel-quality" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">RT &amp; Visual Inspection</span><h1>RT / Inspection</h1><p>Capture Online RT, Manual RT &amp; visual results against each coil</p></div></div>
+      <div class="card"><div class="card-head"><div><h3>Inspection Log — Shift A</h3></div></div>
+        <div class="card-body np"><div class="tbl-wrap"><table>
+          <thead><tr><th>Coil</th><th>Station</th><th>Type</th><th>Result</th><th>Defect</th><th>Action</th></tr></thead><tbody>
+            <tr><td class="mono">C-2240</td><td>Online RT</td><td>Radiography</td><td><span class="badge b-green">PASS</span></td><td>—</td><td>→ Bending</td></tr>
+            <tr><td class="mono">C-2241</td><td>Online RT</td><td>Radiography</td><td><span class="badge b-red">REJECT</span></td><td>Porosity</td><td>→ Rework</td></tr>
+            <tr><td class="mono">C-2239</td><td>Manual RT</td><td>RT in enclosure</td><td><span class="badge b-green">PASS</span></td><td>—</td><td>→ Attachment</td></tr>
+            <tr><td class="mono">C-2236</td><td>Hydro</td><td>Pressure test</td><td><span class="badge b-amber">RETEST</span></td><td>Minor seep</td><td>→ Re-hydro</td></tr>
+          </tbody></table></div></div>
+      </div>
+    </div>
+
+    <!-- ══════ DATA SOURCES & DEVICES (machine/PLC slot) ══════ -->
+    <div id="panel-devices" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">IIoT · Edge · PLC</span><h1>Data Sources &amp; Devices</h1><p>Edge gateways, PLC taps, station tablets &amp; RFID readers feeding BAY 1 in real time</p></div></div>
+      <div class="notice n-gray">📡 <b>14 data sources connected</b> · 11 station tablets · 2 PLC / edge gateways · RFID coil readers — all streaming over local LAN to the on-prem server</div>
+      <div class="dev-grid">
+        <div class="dev-card"><div class="dev-top"><span class="dev-name">🟢 ATCEP Edge Gateway</span><span class="badge b-green">Online</span></div><div class="dev-meta">Protocol: OPC-UA<br>Tags: cut count, cycle, power<br>Latency: 220 ms</div></div>
+        <div class="dev-card"><div class="dev-top"><span class="dev-name">🟢 System Bender PLC</span><span class="badge b-green">Online</span></div><div class="dev-meta">Protocol: Modbus TCP<br>Tags: bend count, run/idle<br>Latency: 310 ms</div></div>
+        <div class="dev-card"><div class="dev-top"><span class="dev-name">📱 Station Tablets ×11</span><span class="badge b-green">11 / 11</span></div><div class="dev-meta">Manual count + reject entry<br>Local LAN · auto-sync<br>Last beat: 3 s ago</div></div>
+        <div class="dev-card"><div class="dev-top"><span class="dev-name">🟡 RFID Coil Readers</span><span class="badge b-amber">5 / 6</span></div><div class="dev-meta">Coil ID at station in/out<br>1 reader needs attention<br>Gate: Hydro inlet</div></div>
+        <div class="dev-card"><div class="dev-top"><span class="dev-name">🟢 Weld Power Source</span><span class="badge b-green">Online</span></div><div class="dev-meta">Protocol: Profinet<br>Tags: current · arc-on · energy<br>Latency: 280 ms</div></div>
+        <div class="dev-card"><div class="dev-top"><span class="dev-name">🖥️ LED Line Display</span><span class="badge b-green">Live</span></div><div class="dev-meta">Shop-floor Andon board<br>Mirrors line dashboard<br>1920×1080 kiosk</div></div>
+      </div>
+    </div>
+
+    <!-- ══════ ERP INTEGRATION ══════ -->
+    <div id="panel-erp" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">Infor LN · Power BI</span><h1>ERP Integration</h1><p>API/web-service sync with Infor LN ERP · Excel / CSV / Power BI export</p></div></div>
+      <div class="g2">
+        <div class="card"><div class="card-head"><div><h3>🔗 Infor LN Connector</h3></div><span class="badge b-green">● Connected</span></div>
+          <div class="card-body"><div class="dev-meta" style="font-size:12px">Endpoint: /ln/production/feedback<br>Last sync: 2 min ago · 142 records<br>Work-order actuals · consumption · WIP status</div>
+          <div class="divider"></div><p class="helper-txt">Production counts and coil status flow back to the work order in Infor LN automatically — no double entry.</p></div>
+        </div>
+        <div class="card"><div class="card-head"><div><h3>📤 Export &amp; BI</h3></div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:9px;">
+            <button class="btn btn-ghost" onclick="toast('📤 Shift OEE report exported to Excel')">⬇ Shift OEE Report → Excel</button>
+            <button class="btn btn-ghost" onclick="toast('📤 Coil traceability exported to CSV')">⬇ Coil Traceability → CSV</button>
+            <button class="btn btn-ghost" onclick="toast('📊 Power BI live dataset refreshed')">📊 Power BI Live Dataset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ ADMIN ══════ -->
+    <div id="panel-admin" class="panel">
+      <div class="page-hdr"><div><span class="page-tag">RBAC · ISO 27001</span><h1>Users &amp; Audit</h1><p>Role-based access control, audit trail &amp; security posture</p></div></div>
+      <div class="g2">
+        <div class="card"><div class="card-head"><div><h3>Roles &amp; Access</h3></div></div>
+          <div class="card-body np"><div class="tbl-wrap"><table>
+            <thead><tr><th>Role</th><th>Access</th><th>Users</th></tr></thead><tbody>
+              <tr><td class="fw6">Operator</td><td>Own station entry</td><td class="tnum">42</td></tr>
+              <tr><td class="fw6">Supervisor</td><td>Bay dashboards + reports</td><td class="tnum">8</td></tr>
+              <tr><td class="fw6">Quality</td><td>RT / inspection · rework</td><td class="tnum">6</td></tr>
+              <tr><td class="fw6">Plant Head</td><td>All bays · analytics</td><td class="tnum">3</td></tr>
+            </tbody></table></div></div>
+        </div>
+        <div class="card"><div class="card-head"><div><h3>Audit Trail</h3></div><span class="badge b-teal">TLS 1.3</span></div>
+          <div class="card-body">
+            <div class="dev-meta" style="font-size:11.5px;line-height:2.1">
+              08:41 · A.Pawar · submitted STBW count<br>
+              08:39 · System · RT reject C-2241 logged<br>
+              08:30 · M.Jadhav · breakdown St-05<br>
+              08:12 · R.Sutar · exported shift report
+            </div>
+            <div class="divider"></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;"><span class="badge b-green">✓ RBAC</span><span class="badge b-green">✓ Encrypted (TLS 1.3)</span><span class="badge b-green">✓ Audit logging</span><span class="badge b-blue">ISO 27001 aligned</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ════════ BAY-1 STATION DATA — exact figures from the TBWES tracking sheet ════════ */
+const stations = [
+  {no:1,  name:'ATCEP',            flow:'Tubes → Chamfered Tubes',      target:300, actual:250, loss:80,  reject:5, run:400, down:80,  avail:83, quality:98, perf:98, oee:80, status:'run'},
+  {no:2,  name:'STBW',             flow:'Chamfered → Joints',           target:80,  actual:70,  loss:60,  reject:5, run:420, down:60,  avail:88, quality:93, perf:93, oee:75, status:'run'},
+  {no:3,  name:'Online RT',        flow:'Joints → OK Joints',           target:80,  actual:70,  loss:60,  reject:5, run:420, down:60,  avail:88, quality:93, perf:93, oee:75, status:'run'},
+  {no:4,  name:'System Bender',    flow:'Loops → Bends / Coil',         target:280, actual:220, loss:103, reject:5, run:377, down:103, avail:79, quality:98, perf:98, oee:75, status:'run'},
+  {no:5,  name:'Butt Joint Setup', flow:'Loops → Joint Setup',          target:20,  actual:10,  loss:240, reject:5, run:240, down:240, avail:50, quality:50, perf:50, oee:13, status:'breakdown'},
+  {no:6,  name:'Butt Joint Weld',  flow:'Joints → Coil Welded',         target:10,  actual:6,   loss:192, reject:5, run:288, down:192, avail:60, quality:17, perf:17, oee:2,  status:'breakdown'},
+  {no:7,  name:'Manual RT',        flow:'Coils → RT Done',              target:10,  actual:6,   loss:192, reject:5, run:288, down:192, avail:60, quality:17, perf:17, oee:2,  status:'idle'},
+  {no:8,  name:'Attachment Setup', flow:'Coils → Attach S/U',           target:10,  actual:6,   loss:192, reject:5, run:288, down:192, avail:60, quality:17, perf:17, oee:2,  status:'run'},
+  {no:9,  name:'Attachment Weld',  flow:'Coils → Attach Weld',          target:6,   actual:4,   loss:160, reject:1, run:320, down:160, avail:67, quality:75, perf:75, oee:38, status:'run'},
+  {no:10, name:'Hydro',            flow:'Coils → Hydro Done',           target:8,   actual:6,   loss:120, reject:5, run:360, down:120, avail:75, quality:17, perf:17, oee:2,  status:'idle'},
+  {no:11, name:'Painting',         flow:'Coils → Painted',              target:12,  actual:10,  loss:80,  reject:5, run:400, down:80,  avail:83, quality:50, perf:50, oee:21, status:'run'},
+];
+
+stations.forEach(s=>{ s.baseActual=s.actual; s.basePerf=s.perf; });
+
+const oeeClass = v => v >= 65 ? 'oee-good' : v >= 35 ? 'oee-mid' : 'oee-bad';
+const barColor = v => v >= 65 ? '#0d9660' : v >= 35 ? '#d97706' : '#dc2626';
+const pad2 = n => String(n).padStart(2,'0');
+const statusLbl = {run:'Running', idle:'Idle', breakdown:'Breakdown'};
+
+/* ─── KPI strip ─── */
+function avg(key){ return Math.round(stations.reduce((s,x)=>s+x[key],0)/stations.length); }
+function renderKPIs(){
+  const lineOEE = avg('oee'), a = avg('avail'), p = avg('perf'), q = avg('quality');
+  const output = stations[stations.length-1].actual;     // final-station throughput
+  const breakdowns = stations.filter(s=>s.status==='breakdown').length;
+  const cls = v => v>=65?'green':v>=35?'amber':'red';
+  const k = [
+    {v:lineOEE+'%', l:'Line OEE', s:'avg · 11 stations', c:cls(lineOEE)},
+    {v:a+'%', l:'Availability', s:'run / planned', c:cls(a)},
+    {v:p+'%', l:'Performance', s:'actual / target', c:cls(p)},
+    {v:q+'%', l:'Quality', s:'good / total', c:cls(q)},
+    {v:output, l:'Coils Out · Shift', s:'painting output', c:'blue'},
+    {v:breakdowns, l:'Active Breakdowns', s:'needs action', c:breakdowns?'red':'green'},
+  ];
+  document.getElementById('kpi-strip').innerHTML = k.map(x=>
+    `<div class="kc ${x.c}"><div class="kc-val">${x.v}</div><div class="kc-lbl">${x.l}</div><div class="kc-sub">${x.s}</div></div>`).join('');
+}
+
+/* ─── Pipeline tiles ─── */
+function renderPipeline(){
+  const tiles = stations.map(s=>`
+    <div class="st-tile st-${s.status}" id="tile-${s.no}" onclick="go('stations')">
+      <div class="st-top"><span class="st-no">${pad2(s.no)}</span><span class="st-dot dot-${s.status}"></span></div>
+      <div class="st-name">${s.name}</div>
+      <div class="st-flow">${s.flow}</div>
+      <div class="st-counts"><b id="plc-${s.no}">${s.actual}</b> / ${s.target}</div>
+      <div class="st-oee ${oeeClass(s.oee)}" id="plo-${s.no}">OEE ${s.oee}%</div>
+      <div class="st-status-lbl sl-${s.status}">● ${statusLbl[s.status]}</div>
+    </div>`).join('<div class="st-arrow">→</div>');
+  document.getElementById('pipeline').innerHTML = tiles;
+}
+
+/* ─── Station monitor table (their sheet) ─── */
+function renderMonitor(){
+  document.getElementById('mon-body').innerHTML = stations.map(s=>{
+    const sb = s.status==='run'?'b-green':s.status==='idle'?'b-amber':'b-red';
+    return `<tr>
+      <td class="mono">${pad2(s.no)}</td>
+      <td class="fw6">${s.name}</td>
+      <td class="txt-mid" style="color:var(--text-mid)">${s.flow.split(' → ')[0]}</td>
+      <td class="txt-mid" style="color:var(--text-mid)">${s.flow.split(' → ')[1]||''}</td>
+      <td class="tnum">${s.target}</td>
+      <td class="tnum" id="ma-${s.no}">${s.actual}</td>
+      <td class="tnum" style="color:var(--red)">${s.loss}</td>
+      <td class="tnum">${s.reject}</td>
+      <td class="tnum">${s.run}</td>
+      <td class="tnum">${s.down}</td>
+      <td class="tnum">${s.avail}%</td>
+      <td class="tnum">${s.quality}%</td>
+      <td class="tnum" id="mp-${s.no}">${s.perf}%</td>
+      <td class="cell-oee" id="mo-${s.no}" style="color:${barColor(s.oee)}">${s.oee}%</td>
+      <td><span class="badge ${sb}">● ${statusLbl[s.status]}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─── OEE ranking ─── */
+function renderOEE(){
+  const sorted = [...stations].sort((a,b)=>a.oee-b.oee);
+  document.getElementById('oee-list').innerHTML = sorted.map(s=>`
+    <div class="oee-row">
+      <div class="oee-st">${pad2(s.no)} · ${s.name}</div>
+      <div class="oee-track"><div class="oee-bar" style="width:${Math.max(s.oee,6)}%;background:${barColor(s.oee)}">${s.oee}%</div></div>
+      <div class="apq">
+        <div class="apq-chip">A<b>${s.avail}%</b></div>
+        <div class="apq-chip">P<b>${s.perf}%</b></div>
+        <div class="apq-chip">Q<b>${s.quality}%</b></div>
+      </div>
+    </div>`).join('');
+}
+
+/* ─── Dashboard side boxes ─── */
+function renderSideBoxes(){
+  const worst = [...stations].sort((a,b)=>a.oee-b.oee).slice(0,3);
+  document.getElementById('bottleneck-box').innerHTML =
+    `<div class="notice n-err" style="margin-bottom:12px">🛑 Primary bottleneck: <b>Butt Joint Setup (St-05)</b> — 240 min lost, OEE 13%</div>` +
+    worst.map(s=>`<div class="oee-row"><div class="oee-st">${pad2(s.no)} · ${s.name}</div>
+      <div class="oee-track"><div class="oee-bar" style="width:${Math.max(s.oee,6)}%;background:${barColor(s.oee)}">${s.oee}%</div></div>
+      <div class="pareto-val" style="color:var(--red)">−${s.loss}m</div></div>`).join('');
+
+  const wip = [['ATCEP → STBW',46],['STBW → RT',12],['RT → Bender',8],['Bender → Setup',31],['Setup → Weld',24],['Weld → Hydro',5]];
+  document.getElementById('wip-box').innerHTML = wip.map(w=>`
+    <div class="oee-row"><div class="oee-st" style="width:150px">${w[0]}</div>
+    <div class="oee-track"><div class="oee-bar" style="width:${Math.min(w[1]*2,100)}%;background:var(--blue2)">${w[1]}</div></div></div>`).join('') +
+    `<p class="helper-txt" style="margin-top:8px">WIP piling up before the welding/RT cluster confirms the bottleneck downstream.</p>`;
+}
+
+/* ════════ NAV ════════ */
+const titles = {dashboard:'Live Line Dashboard',stations:'Station Monitor',terminal:'Operator Terminal',shift:'Shift Performance',oee:'OEE Analytics',downtime:'Downtime & Breakdown',trace:'Coil Traceability',quality:'RT / Inspection',devices:'Data Sources & Devices',erp:'ERP Integration',admin:'Users & Audit'};
+function go(page){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('active'));
+  const p = document.getElementById('panel-'+page); if(p) p.classList.add('active');
+  const n = document.getElementById('nav-'+page); if(n) n.classList.add('active');
+  document.getElementById('topbar-title').textContent = titles[page]||'';
+  closeBell();
+  document.querySelector('.content').scrollTop = 0;
+}
+
+/* ── Bell ── */
+function toggleBell(){ document.getElementById('notif-panel').classList.toggle('open'); }
+function closeBell(){ document.getElementById('notif-panel').classList.remove('open'); }
+function clearNotifs(){ document.querySelectorAll('.np-item.unread').forEach(i=>i.classList.remove('unread')); document.getElementById('bell-count').textContent='0'; }
+document.addEventListener('click',e=>{ const bw=document.querySelector('.bell-wrap'); if(bw && !bw.contains(e.target)) closeBell(); });
+
+/* ── LED kiosk toggle ── */
+function toggleLED(){ document.querySelector('.sidebar').style.display = document.querySelector('.sidebar').style.display==='none'?'flex':'none'; }
+
+/* ─── Status banner (one-glance line health) ─── */
+function renderStatusbar(){
+  const lineOEE=avg('oee'), out=stations[10].actual, tgt=stations[10].target;
+  const down=stations.filter(s=>s.status==='breakdown').length;
+  const under20=stations.filter(s=>s.oee<20).length;
+  document.getElementById('statusbar').innerHTML=`
+    <div class="sb-ic">🔴</div>
+    <div>
+      <div class="sb-main">Line running at <span style="color:var(--red)">${lineOEE}% OEE</span> — below shift target</div>
+      <div class="sb-meta">Primary bottleneck: <b>Butt Joint Setup (St-05)</b>, −240 min &nbsp;·&nbsp; ${down} stations in breakdown &nbsp;·&nbsp; ${under20} stations under 20% OEE</div>
+    </div>
+    <div class="sb-spacer"></div>
+    <div class="sb-chip"><b style="color:${barColor(lineOEE)}">${lineOEE}%</b><span>Line OEE</span></div>
+    <div class="sb-chip"><b>${out}/${tgt}</b><span>Coils</span></div>
+    <div class="sb-chip"><b style="color:var(--red)">${down}</b><span>Down</span></div>`;
+}
+
+/* ─── Shift scorecard (management view) ─── */
+function renderScorecard(){
+  const lineOEE=avg('oee');
+  const totalLoss=stations.reduce((s,x)=>s+x.loss,0);
+  const rejects=stations.reduce((s,x)=>s+x.reject,0);
+  const out=stations[10].actual, tgt=stations[10].target;
+  const hours=[42,38,40,35,33,36,34,lineOEE], maxH=Math.max(...hours);
+  document.getElementById('scorecard-box').innerHTML=`
+    <div class="score-grid">
+      <div class="score-cell"><div class="score-val" style="color:${barColor(lineOEE)}">${lineOEE}%</div><div class="score-lbl">Line OEE (avg)</div></div>
+      <div class="score-cell"><div class="score-val">${out}/${tgt}</div><div class="score-lbl">Coils vs Target</div></div>
+      <div class="score-cell"><div class="score-val">${(totalLoss/60).toFixed(1)}h</div><div class="score-lbl">Line Downtime</div></div>
+      <div class="score-cell"><div class="score-val" style="color:var(--red)">${rejects}</div><div class="score-lbl">Rejects → rework</div></div>
+    </div>
+    <div class="score-lbl" style="margin-bottom:6px">OEE by hour</div>
+    <div class="spark">${hours.map(h=>`<div class="spark-bar" style="height:${Math.round(h/maxH*44)}px;background:${barColor(h)}" title="${h}%"></div>`).join('')}</div>
+    <div class="notice n-warn" style="margin:13px 0 0">💡 Clearing the St-05 bottleneck is worth an estimated <b>+6–8 coils / shift</b></div>`;
+}
+
+/* ─── Live production feed ─── */
+let coilId = 2249;
+const evCol = {green:'var(--green)', red:'var(--red)', blue:'var(--blue2)', amber:'var(--amber)'};
+const feedPool = [
+  {n:'01 · ATCEP',           t:'chamfered tube completed',           c:'green'},
+  {n:'02 · STBW',            t:'short-tube joint welded — in spec',  c:'green'},
+  {n:'03 · Online RT',       t:'radiography PASS',                   c:'green'},
+  {n:'04 · System Bender',   t:'coil bend cycle completed',          c:'green'},
+  {n:'08 · Attachment S/U',  t:'attachment setup done',              c:'green'},
+  {n:'09 · Attachment Weld', t:'attachment full-weld completed',     c:'green'},
+  {n:'05 · Butt Joint Setup',t:'breakdown ongoing — maintenance on site', c:'red'},
+  {n:'07 · Manual RT',       t:'station idle — waiting on WIP',       c:'amber'},
+  {n:'10 · Hydro',           t:'pressure test in progress',          c:'blue'},
+];
+function pushFeed(){
+  const el=document.getElementById('feed'); if(!el) return;
+  let ev, coil='';
+  const r=Math.random();
+  if(r<0.16){ ev={n:'03 · Online RT', t:'radiography <b>REJECT</b> — porosity → rework', c:'red'}; coil='C-'+coilId; }
+  else if(r<0.40){ const p=stations[10]; if(p.actual<p.target) p.actual++; ev={n:'11 · Painting', t:'coil painted — <b>ready for dispatch</b>', c:'green'}; coil='C-'+(coilId++); }
+  else { ev=feedPool[Math.floor(Math.random()*feedPool.length)]; if(Math.random()<0.5) coil='C-'+coilId; }
+  const row=document.createElement('div'); row.className='feed-item';
+  row.innerHTML=`<span class="feed-time">${clockStr()}</span><span class="feed-dot" style="background:${evCol[ev.c]}"></span><span class="feed-txt"><b>${ev.n}</b> — ${ev.t}${coil?' · <span class="mono">'+coil+'</span>':''}</span>`;
+  el.prepend(row);
+  while(el.children.length>9) el.removeChild(el.lastChild);
+}
+
+/* ─── Live count tick (one running station) ─── */
+function bumpRandom(){
+  const runs=stations.filter(s=>s.status==='run' && s.actual<s.target);
+  if(!runs.length) return;
+  const s=runs[Math.floor(Math.random()*runs.length)];
+  s.actual++;
+  s.perf=Math.min(100, Math.round(s.basePerf*s.actual/s.baseActual));
+  s.oee=Math.round(s.avail*s.perf*s.quality/10000);
+  const plc=document.getElementById('plc-'+s.no); if(plc) plc.textContent=s.actual;
+  const plo=document.getElementById('plo-'+s.no); if(plo){ plo.textContent='OEE '+s.oee+'%'; plo.className='st-oee '+oeeClass(s.oee); }
+  const ma=document.getElementById('ma-'+s.no); if(ma) ma.textContent=s.actual;
+  const mp=document.getElementById('mp-'+s.no); if(mp) mp.textContent=s.perf+'%';
+  const mo=document.getElementById('mo-'+s.no); if(mo){ mo.textContent=s.oee+'%'; mo.style.color=barColor(s.oee); }
+  const tile=document.getElementById('tile-'+s.no); if(tile){ tile.classList.add('flash'); setTimeout(()=>tile.classList.remove('flash'),700); }
+}
+
+/* ─── Heartbeat ─── */
+function pulse(){
+  pushFeed();
+  if(Math.random()<0.7) bumpRandom();
+  renderKPIs(); renderStatusbar(); renderScorecard();
+}
+
+/* ─── Toast ─── */
+function toast(msg){ const t=document.getElementById('toast'); t.innerHTML=msg; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ─── Clock ─── */
+let baseTime = new Date(2026,5,22,8,42,10);
+function clockStr(){ return pad2(baseTime.getHours())+':'+pad2(baseTime.getMinutes())+':'+pad2(baseTime.getSeconds()); }
+function tick(){
+  baseTime=new Date(baseTime.getTime()+1000);
+  const c=document.getElementById('clock'); if(c) c.textContent=clockStr();
+  const m=document.getElementById('mon-sync'); if(m) m.textContent='last sync '+(Math.floor(Math.random()*3)+1)+'s ago';
+}
+setInterval(tick,1000); tick();
+
+/* ─── Init ─── */
+renderKPIs(); renderStatusbar(); renderPipeline(); renderMonitor(); renderOEE(); renderSideBoxes(); renderScorecard();
+for(let i=0;i<5;i++) pushFeed();
+renderKPIs(); renderStatusbar(); renderScorecard();
+setInterval(pulse,2500);
+</script>
+</body>
+</html>
