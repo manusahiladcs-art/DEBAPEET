@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vertiv Energy · QC Demo</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#fff; --ink:#15181d; --muted:#7a828e; --line:#e4e7ec;
+    --accent:#ffb400; --accent-d:#e09f00; --ok:#1f9d63; --blue:#3b7ddd;
+    --r:18px; --shadow:0 10px 30px rgba(20,24,30,.08);
+  }
+  *{box-sizing:border-box;margin:0}
+  body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  button{font:inherit;color:inherit}
+  .brand{position:fixed;top:22px;left:28px;font-weight:700;letter-spacing:.14em;font-size:13px;display:flex;align-items:center;gap:10px;z-index:5}
+  .brand i{width:14px;height:14px;background:var(--accent);border-radius:4px;display:block}
+  .screen{display:none;min-height:100vh;padding:90px 24px 60px;animation:in .45s ease}
+  .screen.active{display:block}
+  @keyframes in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .wrap{max-width:760px;margin:0 auto}
+
+  /* Home */
+  .hero{text-align:center;margin-bottom:34px}
+  .hero h1{font-size:34px;font-weight:600;margin-bottom:8px}
+  .hero p{color:var(--muted)}
+  .create-card{display:flex;align-items:center;gap:22px;width:100%;padding:26px 30px;background:var(--card);border-radius:22px;box-shadow:var(--shadow);cursor:pointer;border:2px solid transparent;transition:.25s;text-align:left;margin-bottom:38px}
+  .create-card:hover{transform:translateY(-6px);border-color:var(--accent);box-shadow:0 20px 40px rgba(255,180,0,.25)}
+  .create-card:active{transform:translateY(-1px) scale(.99)}
+  .plus{flex:none;width:64px;height:64px;border-radius:50%;background:var(--accent);display:grid;place-items:center;font-size:36px;font-weight:300;line-height:1;transition:.35s}
+  .create-card:hover .plus{transform:rotate(90deg) scale(1.08)}
+  .create-card h2{font-size:21px;font-weight:600;margin-bottom:3px}
+  .create-card span{color:var(--muted);font-size:14px}
+  .create-card .arrow{margin-left:auto;font-size:24px;color:var(--muted);transition:.25s}
+  .create-card:hover .arrow{transform:translateX(6px);color:var(--ink)}
+
+  .list-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .list-h h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .list-h span{font-size:13px;color:var(--muted)}
+  .proj{display:flex;align-items:center;gap:16px;width:100%;background:var(--card);border:1.5px solid transparent;border-radius:16px;padding:16px 20px;margin-bottom:10px;cursor:pointer;text-align:left;transition:.22s;box-shadow:0 2px 8px rgba(20,24,30,.04)}
+  .proj:hover{transform:translateX(6px);border-color:var(--accent);box-shadow:var(--shadow)}
+  .proj .ic{flex:none;width:44px;height:44px;border-radius:12px;background:#fff4d6;display:grid;place-items:center;font-size:20px}
+  .proj .mid{flex:1;min-width:0}
+  .proj .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .proj .mt{font-size:13px;color:var(--muted);margin-top:2px}
+  .proj .bar{height:5px;background:#eceef2;border-radius:9px;margin-top:9px;overflow:hidden}
+  .proj .bar div{height:100%;background:var(--accent);border-radius:9px}
+  .st{flex:none;font-size:12px;font-weight:600;padding:6px 12px;border-radius:99px}
+  .st.prog{background:#e8f0fc;color:var(--blue)}
+  .st.done{background:#e3f6ec;color:var(--ok)}
+  .st.draft{background:#eef0f3;color:var(--muted)}
+
+  /* Form shell */
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+  .back{background:none;border:0;color:var(--muted);cursor:pointer;padding:8px 12px;border-radius:10px;transition:.2s}
+  .back:hover{background:#e9ebef;color:var(--ink)}
+  .tag{font-size:12px;color:var(--muted);background:#e9ebef;padding:6px 12px;border-radius:99px}
+  .steps{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+  .step{display:flex;align-items:center;gap:10px;color:var(--muted);font-weight:600;font-size:14px;transition:.3s}
+  .step b{width:30px;height:30px;border-radius:50%;background:#e4e7ec;display:grid;place-items:center;font-size:13px;transition:.3s}
+  .step.on{color:var(--ink)} .step.on b{background:var(--accent);color:#000}
+  .step.ok b{background:var(--ok);color:#fff}
+  .steps .ln{flex:1;height:3px;background:#e4e7ec;border-radius:9px;overflow:hidden}
+  .steps .ln div{height:100%;width:0;background:var(--ok);transition:width .4s}
+  h1.title{font-size:28px;font-weight:600;margin-bottom:6px}
+  .lead{color:var(--muted);margin-bottom:22px}
+  .page{display:none;animation:in .4s ease} .page.active{display:block}
+
+  .sec{background:var(--card);border-radius:var(--r);padding:24px 26px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .sec h3{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+  .sec h3 b{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#000;display:grid;place-items:center;font-size:12px;letter-spacing:0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  label.f{display:block;position:relative}
+  label.f span{position:absolute;left:14px;top:8px;font-size:11px;color:var(--muted);pointer-events:none}
+  label.f input{width:100%;padding:26px 14px 9px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:15px;background:#fff;outline:none;transition:.2s}
+  label.f input:hover{border-color:#cdd2da}
+  label.f input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(255,180,0,.18)}
+  label.f input.filled{border-color:#b9e3cf}
+  .fixed{display:flex;gap:12px;align-items:center;background:#fafbfc;border:1.5px dashed var(--line);border-radius:12px;padding:14px;font-size:14px}
+  .fixed small{display:block;color:var(--muted);font-size:11px}
+  .pin{font-size:20px}
+  .chips{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{padding:10px 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;font-size:14px;cursor:pointer;transition:.2s;display:flex;gap:8px;align-items:center}
+  .chip:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .chip.on{background:#fff7e0;border-color:var(--accent)}
+  .chip.on::before{content:"✓";font-weight:700;color:var(--accent-d)}
+  .note{margin-top:14px;font-size:13px;color:var(--muted)}
+
+  /* Tests page */
+  .tools{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+  .count{font-size:15px;color:var(--muted)} .count b{color:var(--ink);font-size:22px}
+  .tools .chips .chip{padding:8px 14px;font-size:13px}
+  .tgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .test{display:flex;gap:12px;align-items:flex-start;text-align:left;background:var(--card);border:2px solid transparent;border-radius:16px;padding:14px 16px;cursor:pointer;transition:.2s;box-shadow:0 2px 8px rgba(20,24,30,.05)}
+  .test:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+  .test .n{flex:none;width:32px;height:32px;border-radius:50%;background:#eef0f3;display:grid;place-items:center;font-size:13px;font-weight:600;color:var(--muted);transition:.2s}
+  .test .t{font-weight:600;font-size:14.5px;line-height:1.3}
+  .test .s{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .test .na{display:inline-block;font-size:10px;font-weight:700;background:#eef0f3;color:var(--muted);padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:middle}
+  .test.on{border-color:var(--accent);background:#fffaf0}
+  .test.on .n{background:var(--accent);color:#000;font-size:0}
+  .test.on .n::after{content:"✓";font-size:16px;font-weight:700}
+
+  .bar2{position:sticky;bottom:18px;display:flex;justify-content:space-between;margin-top:22px;pointer-events:none}
+  .bar2 .btn{pointer-events:auto}
+  .btn{background:var(--ink);color:#fff;border:0;border-radius:14px;padding:16px 30px;font-weight:600;font-size:16px;cursor:pointer;transition:.25s;box-shadow:0 10px 24px rgba(0,0,0,.2)}
+  .btn:hover{background:var(--accent);color:#000;transform:translateY(-3px)}
+  .btn:active{transform:scale(.97)}
+  .btn.off{opacity:.45}
+  .btn.ghost{background:#fff;color:var(--ink);box-shadow:0 6px 18px rgba(0,0,0,.1)}
+  .btn.ghost:hover{background:#fff;color:var(--ink);box-shadow:0 10px 24px rgba(0,0,0,.16)}
+  .spacer{flex:1}
+
+  /* Project screen */
+  .banner{background:var(--ink);color:#fff;border-radius:22px;padding:28px 30px;margin-bottom:20px;display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
+  .banner h1{font-size:26px;font-weight:600}
+  .banner p{color:#aab1bd;font-size:14px;margin-top:4px}
+  .ring{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p)*1%),#3a3f48 0)}
+  .ring div{width:66px;height:66px;border-radius:50%;background:var(--ink);display:grid;place-items:center;font-weight:700}
+  .row{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:14px;padding:13px 18px;margin-bottom:8px;box-shadow:0 2px 8px rgba(20,24,30,.04);transition:.2s;cursor:pointer;border:1.5px solid transparent}
+  .row:hover{border-color:var(--accent);transform:translateX(5px)}
+  .row .n{flex:none;width:30px;height:30px;border-radius:50%;background:#eef0f3;display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--muted)}
+  .row.d .n{background:var(--ok);color:#fff}
+  .row .t{flex:1;font-weight:600;font-size:14.5px}
+  .row .s{font-size:12px;font-weight:600;color:var(--muted)} .row.d .s{color:var(--ok)}
+  /* Test 1 */
+  .info{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:20px 26px;margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .info small{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:6px}
+  .info p{font-size:14px;line-height:1.5}
+  .ctable{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;margin-bottom:16px}
+  .chead,.crow{display:grid;grid-template-columns:1fr 96px 96px;align-items:center}
+  .chead{padding:14px 20px;background:#fafbfc;border-bottom:1.5px solid var(--line);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .chead button{background:none;border:0;cursor:pointer;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--ink);padding:6px;border-radius:8px;transition:.2s}
+  .chead button:hover{background:#fff4d6}
+  .chead button small{display:block;font-size:10px;font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted)}
+  .chead div:nth-child(n+2){text-align:center}
+  .crow{padding:6px 20px;border-bottom:1px solid var(--line);transition:.2s}
+  .crow:last-child{border-bottom:0}
+  .crow:hover{background:#fffaf0}
+  .crow .m{font-size:14.5px;padding:8px 0}
+  .cb{justify-self:center;width:34px;height:34px;border-radius:10px;border:2px solid #d3d8e0;background:#fff;cursor:pointer;display:grid;place-items:center;transition:.18s;color:transparent;font-size:18px;font-weight:700}
+  .cb:hover{border-color:var(--accent);transform:scale(1.1)}
+  .cb.on{background:var(--accent);border-color:var(--accent);color:#000;animation:tick .25s}
+  @keyframes tick{50%{transform:scale(1.25)}}
+  .meter{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:14px;color:var(--muted)}
+  .meter .track{flex:1;height:6px;background:#e4e7ec;border-radius:9px;overflow:hidden}
+  .meter .track div{height:100%;width:0;background:var(--accent);transition:width .3s}
+  .verdict{display:flex;gap:14px}
+  .vbtn{flex:1;padding:18px;border-radius:16px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:16px;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:10px}
+  .vbtn:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+  .vbtn.pass.on{background:var(--ok);border-color:var(--ok);color:#fff}
+  .vbtn.fail.on{background:#d64545;border-color:#d64545;color:#fff}
+  .toast{position:fixed;bottom:28px;left:50%;transform:translate(-50%,30px);background:var(--ink);color:#fff;padding:13px 22px;border-radius:99px;opacity:0;transition:.3s;pointer-events:none;z-index:10;font-size:14px}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  @media(max-width:640px){.grid,.tgrid{grid-template-columns:1fr}.proj .st{display:none}}
+</style>
+</head>
+<body>
+<div class="brand"><i></i>VERTIV ENERGY</div>
+
+<!-- Home -->
+<section class="screen active" id="home">
+  <div class="wrap">
+    <div class="hero"><h1>Quality Control</h1><p>Start a new test or pick up where you left off</p></div>
+    <button class="create-card" onclick="startNew()">
+      <div class="plus">+</div>
+      <div><h2>Create a Project</h2><span>Factory Acceptance Test</span></div>
+      <div class="arrow">→</div>
+    </button>
+    <div class="list-h"><h3>Your projects</h3><span id="pcount"></span></div>
+    <div id="plist"></div>
+  </div>
+</section>
+
+<!-- Form -->
+<section class="screen" id="form">
+  <div class="wrap">
+    <div class="top">
+      <button class="back" id="backBtn" onclick="go('home')">← Projects</button>
+      <span class="tag">Form MF.FT.FR02.1</span>
+    </div>
+
+    <div class="steps">
+      <div class="step on" id="st1"><b>1</b>Details</div>
+      <div class="ln"><div id="ln"></div></div>
+      <div class="step" id="st2"><b>2</b>Tests</div>
+    </div>
+
+    <!-- Page 1 -->
+    <div class="page active" id="p1">
+      <h1 class="title">Project Details</h1>
+      <p class="lead">Factory Acceptance Test · fill in the basics</p>
+
+      <div class="sec">
+        <h3><b>1</b>Client</h3>
+        <div class="grid">
+          <label class="f"><span>Client / Company</span><input data-req id="client"></label>
+          <label class="f"><span>Project</span><input data-req id="project"></label>
+        </div>
+      </div>
+      <div class="sec">
+        <h3><b>2</b>Where</h3>
+        <div class="grid">
+          <div class="fixed"><div class="pin">🏭</div><div><small>Factory site</small>Vertiv Energy Private Limited<small style="margin-top:3px">115/2, Ramtekdi Industrial Area, Hadapsar, Pune 411013, India</small></div></div>
+          <div class="fixed"><div class="pin">📍</div><div><small>Location</small>Factory Test Area, Plant: Pune</div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <h3><b>3</b>Equipment</h3>
+        <div class="grid">
+          <label class="f"><span>Model</span><input data-req id="model"></label>
+          <label class="f"><span>Rating</span><input data-req id="rating"></label>
+          <label class="f"><span>UPS Sr. No.</span><input data-req id="ups"></label>
+          <label class="f"><span>SVR Sr. No.</span><input data-req id="svr"></label>
+        </div>
+      </div>
+      <div class="sec">
+        <h3><b>4</b>Visit</h3>
+        <label class="f"><span>Date of Visit</span><input type="date" data-req id="date"></label>
+      </div>
+      <div class="sec">
+        <h3><b>5</b>Safety · tap to confirm</h3>
+        <div class="chips" data-group="safety">
+          <button class="chip">Treat everything as LIVE</button>
+          <button class="chip">Do not touch exposed parts</button>
+          <button class="chip">Safety glasses worn</button>
+          <button class="chip">Shoes on shop floor</button>
+          <button class="chip">Do not operate factory equipment</button>
+        </div>
+      </div>
+      <div class="sec">
+        <h3><b>6</b>Tools &amp; Equipment · tap to select</h3>
+        <div class="chips">
+          <button class="chip">Hand tools</button>
+          <button class="chip">Test instrumentation</button>
+          <button class="chip">Resistive load</button>
+          <button class="chip">Power analyzer · Hioki</button>
+          <button class="chip">Oscilloscope · Tektronix</button>
+        </div>
+        <p class="note">Calibration certificates available on request.</p>
+      </div>
+      <div class="sec">
+        <h3><b>7</b>Environment</h3>
+        <div class="fixed"><div class="pin">🌡️</div><div>Testing at the factory's ambient temperature at the time of testing</div></div>
+      </div>
+      <div class="bar2"><span class="spacer"></span><button class="btn off" id="next" onclick="next()">Next →</button></div>
+    </div>
+
+    <!-- Page 2 -->
+    <div class="page" id="p2">
+      <h1 class="title">Select Tests</h1>
+      <p class="lead">Tap the tests you want to run for this project</p>
+      <div class="tools">
+        <div class="count"><b id="cnt">0</b> of 30 selected</div>
+        <div class="chips">
+          <button class="chip" onclick="selAll(true)">Select all</button>
+          <button class="chip" onclick="selAll(false)">Clear</button>
+        </div>
+      </div>
+      <div class="tgrid" id="tgrid"></div>
+      <div class="bar2">
+        <button class="btn ghost" onclick="prev()">← Previous</button>
+        <button class="btn" id="start" onclick="submitTests()">Start Project →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Project -->
+<section class="screen" id="proj">
+  <div class="wrap">
+    <div class="top"><button class="back" onclick="go('home')">← Projects</button><span class="tag" id="pTag"></span></div>
+    <div class="banner">
+      <div><h1 id="pName"></h1><p id="pMeta"></p></div>
+      <div class="ring" id="ring"><div id="ringTxt"></div></div>
+    </div>
+    <div class="list-h"><h3>Tests in this project</h3><span id="pTests"></span></div>
+    <div id="rows"></div>
+  </div>
+</section>
+
+<!-- Test 1: Visual inspection -->
+<section class="screen" id="t1">
+  <div class="wrap">
+    <div class="top"><button class="back" onclick="backToProject()">← Project</button><span class="tag">Test 1 of <span id="t1of"></span></span></div>
+    <h1 class="title">Visual Inspection</h1>
+    <p class="lead" id="t1sub"></p>
+
+    <div class="info">
+      <div><small>What to check</small><p>Material, labeling, ferruling, tightness and serial numbers of the UPS equipment.</p></div>
+      <div><small>Accepted when</small><p>Actual results are recorded.</p></div>
+    </div>
+
+    <div class="ctable">
+      <div class="chead">
+        <div>Measure</div>
+        <div><button onclick="colAll(0)">UPS 1<small>tap = all</small></button></div>
+        <div><button onclick="colAll(1)">SVR<small>tap = all</small></button></div>
+      </div>
+      <div id="crows"></div>
+    </div>
+
+    <div class="meter"><span id="mtxt"></span><div class="track"><div id="mbar"></div></div></div>
+
+    <div class="sec">
+      <h3>Result</h3>
+      <div class="verdict">
+        <button class="vbtn pass" id="vpass" onclick="verdict('pass')">✓ Pass</button>
+        <button class="vbtn fail" id="vfail" onclick="verdict('fail')">✕ Fail</button>
+      </div>
+    </div>
+
+    <div class="bar2"><span class="spacer"></span><button class="btn off" id="t1save" onclick="saveT1()">Save &amp; Finish ✓</button></div>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const TESTS=[
+    ["Visual inspection (UPS and SVR)","Dimensions WxDxH · components · BOM · bus bar marking · paint shade RAL 7035 · termination · semi-graphic scheme"],
+    ["Interconnection Cable Check"],
+    ["Light Load Test"],
+    ["UPS Auxiliary Devices Test","Cooling fans & control circuit check"],
+    ["Parallel Redundant UPS Simulation","Current division · parallel operation & load sharing",1],
+    ["Steady State Regulation Test","Different load & PF (0.7 lag & unity) · efficiency, harmonics, regulation"],
+    ["AC Input Failure Test"],
+    ["AC Input Return Test"],
+    ["Transfer – Retransfer Test","Sync & async · auto & manual · output voltage waveform check"],
+    ["Dynamic Response Test","50% & 100% load · dip / overshoot"],
+    ["Short Circuit Test","Short circuit current capability"],
+    ["Manual Restart Test"],
+    ["Output Over Voltage Test"],
+    ["Short-circuit Protection Device Test","Short circuit fuse test"],
+    ["Overload Capacity Test"],
+    ["Earth Fault Test"],
+    ["Synchronization Test"],
+    ["Battery Ripple Test","Ripple current measurement"],
+    ["Battery Reverse Polarity Test","Protection against reverse trolley connection"],
+    ["UPS Fault, Protection, Alarm & Indication Test","Fault diagnostics · functionality checks"],
+    ["Continuity Checks on Potential Free Contact"],
+    ["Audible Noise Test"],
+    ["HV & IR Test","High voltage test & insulation resistance"],
+    ["Battery Breaker Box Test","Visual & functioning checks · report attached"],
+    ["Unbalanced Load Test","",1],
+    ["Hot Stand-by Redundancy Checks","",1],
+    ["Check for Redundancy / Changeover","",1],
+    ["Temperature Rise Test","Redundancy of cooling fans check · report attached"],
+    ["NPS, I Test","",1],
+    ["Cell Booster Test","",1]
+  ];
+  const DEFAULT_SEL=TESTS.map((t,i)=>t[2]?-1:i).filter(i=>i>=0);
+
+  let projects=[
+    {name:"Data Centre Phase 2",client:"Tata Communications",model:"Trinergy 500",date:"2026-11-18",pct:100,status:"done"},
+    {name:"Hospital Power Backup",client:"Apollo Hospitals",model:"Liebert APM 150",date:"2026-11-21",pct:62,status:"prog"},
+    {name:"Telecom Hub Pune",client:"Reliance Jio",model:"Liebert NXL 200",date:"2026-11-22",pct:35,status:"prog"},
+    {name:"Textile Plant UPS",client:"Arvind Mills",model:"Liebert NX 80",date:"2026-11-24",pct:0,status:"draft"},
+    {name:"Airport Terminal B",client:"GMR Group",model:"Trinergy 1000",date:"2026-11-12",pct:100,status:"done"},
+    {name:"Banking Core Facility",client:"HDFC Bank",model:"Liebert APM2 300",date:"2026-11-20",pct:80,status:"prog"}
+  ].map(p=>({...p,tests:DEFAULT_SEL}));
+  const LABEL={prog:"In progress",done:"Completed",draft:"Not started"};
+
+  function go(id){ $$('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); window.scrollTo(0,0); }
+  function fmt(d){ return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+  function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1800); }
+
+  /* Home list */
+  function renderList(){
+    $('#pcount').textContent=projects.length+" projects";
+    $('#plist').innerHTML=projects.map((p,i)=>`
+      <button class="proj" onclick="openProject(${i})">
+        <div class="ic">⚡</div>
+        <div class="mid"><div class="nm">${p.name}</div><div class="mt">${p.client} · ${p.model} · ${fmt(p.date)}</div><div class="bar"><div style="width:${p.pct}%"></div></div></div>
+        <span class="st ${p.status}">${LABEL[p.status]}</span>
+      </button>`).join('');
+  }
+
+  /* Form */
+  const reqs=$$('[data-req]');
+  const chips=$$('#p1 .chip');
+  function validP1(){
+    reqs.forEach(i=>i.classList.toggle('filled',!!i.value.trim()));
+    const filled=reqs.filter(i=>i.value.trim()).length;
+    const safe=$$('[data-group=safety] .chip').every(c=>c.classList.contains('on'));
+    const ok=filled===reqs.length&&safe;
+    $('#next').classList.toggle('off',!ok);
+    return ok;
+  }
+  reqs.forEach(i=>i.addEventListener('input',validP1));
+  chips.forEach(c=>c.addEventListener('click',()=>{c.classList.toggle('on');validP1();}));
+
+  function showPage(n){
+    $('#p1').classList.toggle('active',n===1); $('#p2').classList.toggle('active',n===2);
+    $('#st1').className='step '+(n===1?'on':'ok'); $('#st2').className='step '+(n===2?'on':'');
+    $('#st1 b').textContent=n===1?'1':'✓';
+    $('#ln').style.width=n===2?'100%':'0';
+    window.scrollTo(0,0);
+  }
+  function next(){
+    if(!validP1()){
+      const miss=reqs.find(i=>!i.value.trim());
+      (miss||$('[data-group=safety]')).scrollIntoView({behavior:'smooth',block:'center'});
+      if(miss) miss.focus(); else toast("Please confirm all safety points");
+      return;
+    }
+    showPage(2);
+  }
+  function prev(){ showPage(1); }
+
+  /* Tests page */
+  const sel=new Set();
+  function renderTests(){
+    $('#tgrid').innerHTML=TESTS.map((t,i)=>`
+      <button class="test ${sel.has(i)?'on':''}" onclick="toggleTest(${i})">
+        <div class="n">${i+1}</div>
+        <div><div class="t">${t[0]}${t[2]?'<span class="na">N.A.</span>':''}</div>${t[1]?`<div class="s">${t[1]}</div>`:''}</div>
+      </button>`).join('');
+    $('#cnt').textContent=sel.size;
+    $('#start').classList.toggle('off',sel.size===0);
+  }
+  function toggleTest(i){ sel.has(i)?sel.delete(i):sel.add(i); renderTests(); }
+  function selAll(v){ sel.clear(); if(v) TESTS.forEach((_,i)=>sel.add(i)); renderTests(); }
+
+  function resetForm(){
+    reqs.forEach(i=>i.value=''); chips.forEach(c=>c.classList.remove('on'));
+    sel.clear(); DEFAULT_SEL.forEach(i=>sel.add(i));
+    validP1(); renderTests(); showPage(1);
+  }
+  function startNew(){ resetForm(); go('form'); }
+
+  function submitTests(){
+    if(sel.size===0){ toast("Select at least one test"); return; }
+    projects.unshift({name:$('#project').value,client:$('#client').value,model:$('#model').value,date:$('#date').value,pct:0,status:"draft",tests:[...sel].sort((a,b)=>a-b)});
+    renderList(); openProject(0);
+  }
+
+  /* Project screen */
+  let cur=0;
+  function openProject(i){
+    cur=i; const p=projects[i];
+    if(!p.done){ const n=Math.round(p.tests.length*p.pct/100); p.done=new Set(p.tests.slice(0,n)); }
+    const doneN=p.done.size;
+    p.pct=Math.round(doneN/p.tests.length*100);
+    p.status=p.pct===100?'done':p.pct>0?'prog':'draft';
+    $('#pName').textContent=p.name;
+    $('#pMeta').textContent=`${p.client} · ${p.model} · ${fmt(p.date)}`;
+    $('#pTag').textContent=LABEL[p.status];
+    $('#ring').style.setProperty('--p',p.pct);
+    $('#ringTxt').textContent=p.pct+'%';
+    $('#pTests').textContent=`${doneN} of ${p.tests.length} done`;
+    $('#rows').innerHTML=p.tests.map((ti,k)=>{const d=p.done.has(ti);return `
+      <div class="row ${d?'d':''}" onclick="openTest(${ti})">
+        <div class="n">${d?'✓':ti+1}</div><div class="t">${TESTS[ti][0]}</div><div class="s">${d?'Done':'Open →'}</div>
+      </div>`}).join('');
+    renderList();
+    go('proj');
+  }
+  function backToProject(){ openProject(cur); }
+
+  /* Test 1 : Visual inspection */
+  const MEASURES=["Component Layout","Component Fixing (GA)","Sr. No. Plate","System identification (Model, Tag plates)","Cable entry and Gland Plate","Dimensions (W x D x H)","Paint Shade & Thickness","Material as per BOM","Earthing Provision","Safety Labels","Bus bar Marking & size","Termination Arrangement & clearances","Semi graphic scheme checked"];
+  let grid=[], vres=null;
+  function openTest(ti){
+    if(ti!==0){ toast("This test's steps are coming next"); return; }
+    const p=projects[cur];
+    $('#t1of').textContent=p.tests.length;
+    $('#t1sub').textContent=`${p.name} · ${p.model}`;
+    grid=MEASURES.map(()=>[false,false]); vres=null;
+    renderT1(); go('t1');
+  }
+  function renderT1(){
+    $('#crows').innerHTML=MEASURES.map((m,r)=>`
+      <div class="crow"><div class="m">${m}</div>
+        <button class="cb ${grid[r][0]?'on':''}" onclick="tick(${r},0)">✓</button>
+        <button class="cb ${grid[r][1]?'on':''}" onclick="tick(${r},1)">✓</button>
+      </div>`).join('');
+    const n=grid.flat().filter(Boolean).length, tot=MEASURES.length*2;
+    $('#mtxt').textContent=`${n} of ${tot} checked`;
+    $('#mbar').style.width=(n/tot*100)+'%';
+    $('#vpass').classList.toggle('on',vres==='pass');
+    $('#vfail').classList.toggle('on',vres==='fail');
+    $('#t1save').classList.toggle('off',!vres);
+  }
+  function tick(r,c){ grid[r][c]=!grid[r][c]; renderT1(); }
+  function colAll(c){ const all=grid.every(g=>g[c]); grid.forEach(g=>g[c]=!all); renderT1(); }
+  function verdict(v){ vres=vres===v?null:v; renderT1(); }
+  function saveT1(){
+    if(!vres){ toast("Choose Pass or Fail"); return; }
+    if(vres==='pass') projects[cur].done.add(0); else projects[cur].done.delete(0);
+    toast(vres==='pass'?"Visual inspection passed ✓":"Marked as failed");
+    openProject(cur);
+  }
+
+  renderList(); resetForm();
+</script>
+</body>
+</html>
